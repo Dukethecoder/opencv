@@ -1,0 +1,60 @@
+#include "opencv2/opencv.hpp"
+#include "stdio.h"
+#include <pthread.h>
+using namespace std;
+using namespace cv;
+pthread_t t1,t2;
+bool ld=false;
+Mat frame,gframe,rframe;//objects frame and gframe
+vector<Rect> faces,hbody;//vectors used in detecting half body and full body
+CascadeClassifier face_detect,hbdetect;//create new cascade clasidier objetc 
+string haar_file= "/root/opencv/haar/haarcascade_frontalface_alt2.xml";//file name including location of haar file
+
+void *fa(void *argument)
+{
+	for(;;){
+		face_detect.detectMultiScale(gframe,faces,1.3,1,(100,100));//look for faces in frames
+		for (int i=0;i<faces.size();i++)//check if faces have been found
+{
+	rectangle(frame,faces[i],Scalar(0,0,255),2,8,0);//draw rectangle around faces that hav ebeen detected
+	putText(frame,"face detected",Point(50,100),1.25,1.25,Scalar(0,255,0));
+}
+	}
+}
+void *hbo(void *argument)
+{
+	hbdetect.load("/root/opencv/haar/haarcascade_upperbody.xml");
+	for(;;)
+	{
+hbdetect.detectMultiScale(gframe,hbody,1.3,1);//look for upperbody in frames
+for (int i=0;i<hbody.size();i++)//check if faces have been found
+{
+	rectangle(frame,hbody[i],Scalar(0,0,255),2,8,0);//draw rectangle around faces that hav ebeen detected
+	putText(frame,"face detected",Point(50,100),1.25,1.25,Scalar(0,255,0));
+}
+}
+}
+int main()
+{
+VideoCapture cap(0);//creape video capture medium
+namedWindow("display");//create a window named display
+face_detect.load(haar_file);//load haar file neededss
+for(;;)
+{
+cap.read(frame);//read from cam and store in frames
+cvtColor(frame,gframe,CV_BGR2GRAY);
+equalizeHist(gframe,gframe);
+if(ld==false)
+{
+pthread_create(&t1, NULL,fa,NULL);
+pthread_create(&t2, NULL, hbo,NULL);
+ld=true;
+}
+imshow("display",frame);//display frames in display window
+if (waitKey(30)>=27)
+{
+break;
+}
+}
+return 0;
+}
